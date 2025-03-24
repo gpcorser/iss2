@@ -101,10 +101,15 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <p><strong>Description:</strong> <?= htmlspecialchars($issue['long_description']); ?></p>
+                                    <p><strong>ID:</strong> <?= htmlspecialchars($issue['id']); ?></p>
+                                    <p><strong>Short Description:</strong> <?= htmlspecialchars($issue['short_description']); ?></p>
+                                    <p><strong>Long Description:</strong> <?= htmlspecialchars($issue['long_description']); ?></p>
+                                    <p><strong>Open Date:</strong> <?= htmlspecialchars($issue['open_date']); ?></p>
+                                    <p><strong>Close Date:</strong> <?= htmlspecialchars($issue['close_date']); ?></p>
                                     <p><strong>Priority:</strong> <?= htmlspecialchars($issue['priority']); ?></p>
-                                    <p><strong>Project:</strong> <?= htmlspecialchars($issue['project']); ?></p>
                                     <p><strong>Organization:</strong> <?= htmlspecialchars($issue['org']); ?></p>
+                                    <p><strong>Project:</strong> <?= htmlspecialchars($issue['project']); ?></p>
+                                    <p><strong>Project:</strong> <?= htmlspecialchars($issue['per_id']); ?></p>
                                 </div>
                             </div>
                         </div>
