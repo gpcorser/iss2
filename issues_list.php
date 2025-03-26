@@ -10,8 +10,27 @@ $persons_sql = "SELECT id, fname, lname FROM dsr_persons ORDER BY lname ASC";
 $persons_stmt = $pdo->query($persons_sql);
 $persons = $persons_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Handle issue operations (Update, Delete)
+// Handle issue operations (Create, Update, Delete)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['create_issue'])) {
+        $short_description = trim($_POST['short_description']);
+        $long_description = trim($_POST['long_description']);
+        $open_date = $_POST['open_date'];
+        $close_date = $_POST['close_date'];
+        $priority = $_POST['priority'];
+        $org = trim($_POST['org']);
+        $project = trim($_POST['project']);
+        $per_id = $_POST['per_id'];
+
+        $sql = "INSERT INTO iss_issues (short_description, long_description, open_date, close_date, priority, org, project, per_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$short_description, $long_description, $open_date, $close_date, $priority, $org, $project, $per_id]);
+
+        header("Location: issues_list.php");
+        exit();
+    }
+
     if (isset($_POST['update_issue'])) {
         $id = $_POST['id'];
         $short_description = trim($_POST['short_description']);
@@ -41,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit();
     }
 }
+
 
 // Fetch all issues
 $sql = "SELECT * FROM iss_issues ORDER BY open_date DESC";
@@ -92,6 +112,55 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                         </td>
                     </tr>
 
+                    <!-- Create Modal -->
+                    <div class="modal fade" id="addIssueModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title">Add New Issue</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST">
+                                        <label for="short_description">Short Description</label>
+                                        <input type="text" name="short_description" class="form-control mb-2" required>
+
+                                        <label for="long_description">Long Description</label>
+                                        <textarea name="long_description" class="form-control mb-2"></textarea>
+
+                                        <label for="open_date">Open Date</label>
+                                        <input type="date" name="open_date" class="form-control mb-2" value="<?= date('Y-m-d'); ?>" required>
+
+                                        <label for="close_date">Close Date</label>
+                                        <input type="date" name="close_date" class="form-control mb-2">
+
+                                        <label for="priority">Priority</label>
+                                        <input type="text" name="priority" class="form-control mb-2">
+
+                                        <label for="org">Org</label>
+                                        <input type="text" name="org" class="form-control mb-2">
+
+                                        <label for="project">Project</label>
+                                        <input type="text" name="project" class="form-control mb-2">
+
+                                        <label for="per_id">Person Responsible</label>
+                                        <select name="per_id" class="form-control mb-3">
+                                            <option value="">-- Select Person --</option>
+                                            <?php foreach ($persons as $person): ?>
+                                                <option value="<?= $person['id']; ?>">
+                                                    <?= htmlspecialchars($person['lname'] . ', ' . $person['fname']) . ' (' . $person['id'] .  ') '; ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+
+                                        <button type="submit" name="create_issue" class="btn btn-success">Add Issue</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
                     <!-- Read Modal -->
                     <div class="modal fade" id="readIssue<?= $issue['id']; ?>" tabindex="-1">
                         <div class="modal-dialog">
@@ -109,7 +178,7 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                     <p><strong>Priority:</strong> <?= htmlspecialchars($issue['priority']); ?></p>
                                     <p><strong>Organization:</strong> <?= htmlspecialchars($issue['org']); ?></p>
                                     <p><strong>Project:</strong> <?= htmlspecialchars($issue['project']); ?></p>
-                                    <p><strong>Project:</strong> <?= htmlspecialchars($issue['per_id']); ?></p>
+                                    <p><strong>Person:</strong> <?= htmlspecialchars($issue['per_id']); ?></p>
                                 </div>
                             </div>
                         </div>
@@ -126,10 +195,22 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="modal-body">
                                     <form method="POST">
                                         <input type="hidden" name="id" value="<?= $issue['id']; ?>">
+                                        <label for="short_description">Short Description</label>
                                         <input type="text" name="short_description" class="form-control mb-2" value="<?= htmlspecialchars($issue['short_description']); ?>" required>
+                                        <label for="long_description">Long Description</label>
                                         <textarea name="long_description" class="form-control mb-2"><?= htmlspecialchars($issue['long_description']); ?></textarea>
-                                        <input type="date" name="open_date" class="form-control mb-2" value="<?= $issue['open_date']; ?>" required>
+                                        <label for="open_date">Open Date</label>
+                                        <input type="date" name="open_date" class="form-control mb-2" value="<?= $issue['open_date']; ?>" readonly>
+                                        <label for="close_date">Close Date</label>
                                         <input type="date" name="close_date" class="form-control mb-2" value="<?= $issue['close_date']; ?>">
+                                        <label for="priority">Priority</label>
+                                        <input type="text" name="priority" class="form-control mb-2" value="<?= $issue['priority']; ?>">
+                                        <label for="org">Org</label>
+                                        <input type="text" name="org" class="form-control mb-2" value="<?= $issue['org']; ?>">
+                                        <label for="project">Project</label>
+                                        <input type="text" name="project" class="form-control mb-2" value="<?= $issue['project']; ?>">
+                                        <label for="per_id">Person Responsible</label>
+                                        <input type="number" name="per_id" class="form-control mb-2" value="<?= $issue['per_id']; ?>">
                                         <button type="submit" name="update_issue" class="btn btn-primary">Save Changes</button>
                                     </form>
                                 </div>
@@ -147,7 +228,16 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                 </div>
                                 <div class="modal-body">
                                     <p>Are you sure you want to delete this issue?</p>
-                                    <p><strong>Description:</strong> <?= htmlspecialchars($issue['short_description']); ?></p>
+                                    <p><strong>ID:</strong> <?= htmlspecialchars($issue['id']); ?></p>
+                                    <p><strong>Short Description:</strong> <?= htmlspecialchars($issue['short_description']); ?></p>
+                                    <p><strong>Long Description:</strong> <?= htmlspecialchars($issue['long_description']); ?></p>
+                                    <p><strong>Open Date:</strong> <?= htmlspecialchars($issue['open_date']); ?></p>
+                                    <p><strong>Close Date:</strong> <?= htmlspecialchars($issue['close_date']); ?></p>
+                                    <p><strong>Priority:</strong> <?= htmlspecialchars($issue['priority']); ?></p>
+                                    <p><strong>Organization:</strong> <?= htmlspecialchars($issue['org']); ?></p>
+                                    <p><strong>Project:</strong> <?= htmlspecialchars($issue['project']); ?></p>
+                                    <p><strong>Person:</strong> <?= htmlspecialchars($issue['per_id']); ?></p>
+
                                     <form method="POST">
                                         <input type="hidden" name="id" value="<?= $issue['id']; ?>">
                                         <button type="submit" name="delete_issue" class="btn btn-danger">Delete</button>
