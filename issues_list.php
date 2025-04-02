@@ -6,12 +6,45 @@ $pdo = Database::connect();
 $error_message = "";
 
 // Fetch persons for dropdown list
-$persons_sql = "SELECT id, fname, lname FROM dsr_persons ORDER BY lname ASC";
+$persons_sql = "SELECT id, fname, lname FROM iss_persons ORDER BY lname ASC";
 $persons_stmt = $pdo->query($persons_sql);
 $persons = $persons_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle issue operations (Create, Update, Delete)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // echo "this is a test of file uploads" ; print_r($_FILES); exit(); // checkpoint
+    if(isset($_FILES['pdf_attachment'])) {
+
+        $fileTmpPath = $_FILES['pdf_attachment']['tmp_name'];
+        $fileName    = $_FILES['pdf_attachment']['name'];
+        $fileSize    = $_FILES['pdf_attachment']['size'];
+        $fileType    = $_FILES['pdf_attachment']['type'];
+        $fileNameCmps = explode(".", $fileName);
+        $fileExtension = strtolower(end($fileNameCmps));
+
+        if($fileExtension !== 'pdf') {
+            die("Only PDF files allowed");
+        }
+        if($fileSize > 2 * 1024 * 1024) {
+            die("File size exceeds 2MB limit");
+        }
+
+        $newFileName = MD5(time() . $fileName) . '.' . $fileExtension;
+        $uploadFileDir = './uploads/';
+        $dest_path = $uploadFileDir . $newFileName;
+        // if uploads directory does not exist, create it
+        if(!is_dir($uploadFileDir)) {
+            mkdir($uploadFileDir, 0755, true);
+        }
+
+        if (move_uploaded_file($fileTmpPath, $dest_path)) {
+            $attachmentPath = $dest_path;
+        } else {
+            die("error moving file");
+        }
+
+    } // end pdf attachment
+    
     if (isset($_POST['create_issue'])) {
         $short_description = trim($_POST['short_description']);
         $long_description = trim($_POST['long_description']);
@@ -21,11 +54,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $org = trim($_POST['org']);
         $project = trim($_POST['project']);
         $per_id = $_POST['per_id'];
+        // $newFileName is PDF attachment
+        // $attachmentPath is the entire path
 
-        $sql = "INSERT INTO iss_issues (short_description, long_description, open_date, close_date, priority, org, project, per_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO iss_issues (short_description, long_description, 
+            open_date, close_date, priority, org, project, per_id, 
+            pdf_attachment)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$short_description, $long_description, $open_date, $close_date, $priority, $org, $project, $per_id]);
+        $stmt->execute([$short_description, $long_description, 
+            $open_date, $close_date, $priority, $org, $project, $per_id,
+            $newFileName]);
 
         header("Location: issues_list.php");
         exit();
@@ -121,7 +160,7 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <form method="POST">
+                                    <form method="POST" enctype="multipart/form-data">
                                         <label for="short_description">Short Description</label>
                                         <input type="text" name="short_description" class="form-control mb-2" required>
 
@@ -153,6 +192,10 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                             <?php endforeach; ?>
                                         </select>
 
+                                        <label for="pdf_attachment">PDF</label>
+                                        <input type="file" name="pdf_attachment" class="form-control mb-2"
+                                            accept="application/pdf" />
+
                                         <button type="submit" name="create_issue" class="btn btn-success">Add Issue</button>
                                     </form>
                                 </div>
@@ -179,6 +222,40 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                     <p><strong>Organization:</strong> <?= htmlspecialchars($issue['org']); ?></p>
                                     <p><strong>Project:</strong> <?= htmlspecialchars($issue['project']); ?></p>
                                     <p><strong>Person:</strong> <?= htmlspecialchars($issue['per_id']); ?></p>
+                                    
+                                    
+                                    <?php
+                                        $com_iss_id = $issue['id'];
+                                        // Fetch comments this particular issue: gpcorser
+                                        $comments_sql = "SELECT * FROM iss_comments, iss_persons 
+                                            WHERE iss_id = $com_iss_id
+                                            AND `iss_persons`.id = per_id
+                                            ORDER BY posted_date DESC";
+                                        $comments_stmt = $pdo->query($comments_sql);
+                                        $comments = $comments_stmt->fetchAll(PDO::FETCH_ASSOC);
+                                        
+                                    ?>
+<?php foreach ($comments as $comment) : ?>
+    <div style="font-family: monospace;">
+        <span style="display:inline-block; width: 180px;">
+            <?= htmlspecialchars($comment['lname'] . ", " . $comment['fname']) ?>
+        </span>
+        <span style="display:inline-block; width: 300px;">
+            <?= htmlspecialchars($comment['short_comment']) ?>
+        </span>
+        <span style="display:inline-block; width: 140px;">
+            <?= htmlspecialchars($comment['posted_date']) ?>
+        </span>
+        <span style="display:inline-block; width: 150px;">
+            <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#readIssue<?= $comment['id']; ?>">R</button>
+            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateIssue<?= $comment['id']; ?>">U</button>
+            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteIssue<?= $comment['id']; ?>">D</button>
+        </span>
+    </div>
+<?php endforeach; ?>
+
+
+                                    
                                 </div>
                             </div>
                         </div>
