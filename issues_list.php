@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (!isset($_SESSION['user_id'])) {
+    session_destroy();
+    header("Location: login.php");
+}
 require '../database/database.php'; // Database connection
 
 $pdo = Database::connect();
@@ -71,6 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     if (isset($_POST['update_issue'])) {
+        if( !( $_SESSION['admin'] == "Y" || $_SESSION['user_id'] == $_POST['per_id'] ) ) {
+            header("Location: issues_list.php"); 
+            exit();
+        }
+           
         $id = $_POST['id'];
         $short_description = trim($_POST['short_description']);
         $long_description = trim($_POST['long_description']);
@@ -90,6 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     if (isset($_POST['delete_issue'])) {
+        if( !( $_SESSION['admin'] == "Y" || $_SESSION['user_id'] == $_POST['per_id'] ) ) {
+            header("Location: issues_list.php"); 
+            exit();
+        }
         $id = $_POST['id'];
         $sql = "DELETE FROM iss_issues WHERE id=?";
         $stmt = $pdo->prepare($sql);
@@ -121,6 +134,7 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         <!-- "+" Button to Add Issue -->
         <div class="d-flex justify-content-between align-items-center mt-3">
             <h3>All Issues</h3>
+            <a href="logout.php" class="btn btn-warning">Logout</a>
             <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addIssueModal">+</button>
         </div>
 
@@ -146,8 +160,10 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                         <td>
                             <!-- R, U, D Buttons -->
                             <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#readIssue<?= $issue['id']; ?>">R</button>
+                            <?php if($_SESSION['user_id'] == $issue['per_id'] || $_SESSION['admin'] == "Y") { ?>
                             <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateIssue<?= $issue['id']; ?>">U</button>
                             <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteIssue<?= $issue['id']; ?>">D</button>
+                            <?php } ?>
                         </td>
                     </tr>
 

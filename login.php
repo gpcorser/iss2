@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!empty($email) && !empty($password)) {
         try {
             // Prepare SQL statement
-            $stmt = $pdo->prepare("SELECT id, fname, lname, pwd_hash, pwd_salt FROM iss_persons WHERE email = :email");
+            $stmt = $pdo->prepare("SELECT * FROM iss_persons WHERE email = :email");
             $stmt->bindParam(':email', $email, PDO::PARAM_STR);
             $stmt->execute();
             
@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $lname = $user['lname'];
                 $stored_hash = $user['pwd_hash'];
                 $stored_salt = $user['pwd_salt'];
+                $admin = $user['admin'];
 
                 
                 // Hash the input password with the stored salt
@@ -33,9 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 
                 if ($hashed_input_pwd === $stored_hash) {
                     // Authentication successful, set session variables
-                    $_SESSION['user_id'] = $id;
+                    $_SESSION['user_id'] = $id; // this is checked to verify login
                     $_SESSION['user_name'] = $fname . ' ' . $lname;
                     $_SESSION['email'] = $email;
+                    $_SESSION['admin'] = $admin;
 
                     // Close connection
                     Database::disconnect();
@@ -44,15 +46,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     exit();
                 } else {
                     $error = "Invalid email or password.";
+                    session_destroy();
                 }
             } else {
                 $error = "Invalid email or password.";
+                session_destroy();
             }
         } catch (PDOException $e) {
             $error = "Database error: " . $e->getMessage();
+            session_destroy();
         }
     } else {
         $error = "Please enter both email and password.";
+        session_destroy();
     }
 }
 
