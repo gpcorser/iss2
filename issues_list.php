@@ -3,6 +3,7 @@ session_start();
 if (!isset($_SESSION['user_id'])) {
     session_destroy();
     header("Location: login.php");
+    exit(); 
 }
 require '../database/database.php'; // Database connection
 
@@ -16,8 +17,9 @@ $persons = $persons_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle issue operations (Create, Update, Delete)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
     // echo "this is a test of file uploads" ; print_r($_FILES); exit(); // checkpoint
-    if(isset($_FILES['pdf_attachment'])) {
+    if($_FILES['pdf_attachment']['size'] > 0) {
 
         $fileTmpPath = $_FILES['pdf_attachment']['tmp_name'];
         $fileName    = $_FILES['pdf_attachment']['name'];
