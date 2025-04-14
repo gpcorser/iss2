@@ -77,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     if (isset($_POST['update_issue'])) {
+        
         if( !( $_SESSION['admin'] == "Y" || $_SESSION['user_id'] == $_POST['per_id'] ) ) {
             header("Location: issues_list.php"); 
             exit();
@@ -101,7 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     if (isset($_POST['delete_issue'])) {
-        if( !( $_SESSION['admin'] == "Y" || $_SESSION['user_id'] == $_POST['per_id'] ) ) {
+        
+        if( !( $_SESSION['admin'] == "Y" || $_SESSION['user_id'] == $_POST['id'] ) ) {
             header("Location: issues_list.php"); 
             exit();
         }
@@ -334,6 +336,7 @@ $issues = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                     <p><strong>Person:</strong> <?= htmlspecialchars($issue['per_id']); ?></p>
 
                                     <form method="POST">
+                                        <input type="hidden" name="per_id" class="form-control mb-2" value="<?= $issue['per_id']; ?>">
                                         <input type="hidden" name="id" value="<?= $issue['id']; ?>">
                                         <button type="submit" name="delete_issue" class="btn btn-danger">Delete</button>
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
